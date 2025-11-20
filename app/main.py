@@ -30,8 +30,8 @@ def health():
     return {"status": "ok"}
 
 
-# TODO: Подключить роутеры
-# from app.routers import users, events, admin
-# app.include_router(users.router, prefix="/api/users", tags=["users"])
-# app.include_router(events.router, prefix="/api/events", tags=["events"])
-# app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+# Подключаем роутеры
+from app.routers import users, events
+
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(events.router, prefix="/api/events", tags=["events"])

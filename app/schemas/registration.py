@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, ConfigDict
 
-if TYPE_CHECKING:
-    from app.schemas.user import User
-    from app.schemas.event import Event
+from app.schemas.user import User
+from app.schemas.event import Event
+from app.schemas.user import UserUpdate
 
 
 class RegistrationBase(BaseModel):
@@ -41,5 +41,12 @@ class Registration(RegistrationInDB):
 class RegistrationWithDetails(Registration):
     """Схема регистрации с деталями пользователя и события."""
 
-    user: "User | None" = None
-    event: "Event | None" = None
+    user: User | None = None
+    event: Event | None = None
+
+
+class EventRegistrationRequest(BaseModel):
+    """Схема для регистрации на мероприятие."""
+
+    telegram_id: int
+    user_data: UserUpdate
