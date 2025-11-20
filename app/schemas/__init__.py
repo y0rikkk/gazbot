@@ -1,0 +1,51 @@
+"""Schemas package."""
+
+from app.schemas.user import User, UserCreate, UserUpdate, UserInDB
+from app.schemas.event import (
+    Event,
+    EventCreate,
+    EventUpdate,
+    EventInDB,
+    EventWithRegistrationCount,
+)
+from app.schemas.registration import (
+    Registration,
+    RegistrationCreate,
+    RegistrationInDB,
+    RegistrationWithDetails,
+)
+from app.schemas.telegram import TelegramUser, TelegramWebAppData, MessageSend
+from app.schemas.common import (
+    ResponseBase,
+    ErrorResponse,
+    PaginationParams,
+    PaginatedResponse,
+)
+
+__all__ = [
+    # User
+    "User",
+    "UserCreate",
+    "UserUpdate",
+    "UserInDB",
+    # Event
+    "Event",
+    "EventCreate",
+    "EventUpdate",
+    "EventInDB",
+    "EventWithRegistrationCount",
+    # Registration
+    "Registration",
+    "RegistrationCreate",
+    "RegistrationInDB",
+    "RegistrationWithDetails",
+    # Telegram
+    "TelegramUser",
+    "TelegramWebAppData",
+    "MessageSend",
+    # Common
+    "ResponseBase",
+    "ErrorResponse",
+    "PaginationParams",
+    "PaginatedResponse",
+]
