@@ -13,6 +13,7 @@ class EventBase(BaseModel):
     event_date: datetime
     location: str | None = Field(None, max_length=255)
     deadline: datetime
+    is_active: bool = False
 
 
 class EventCreate(EventBase):
@@ -29,6 +30,7 @@ class EventUpdate(BaseModel):
     event_date: datetime | None = None
     location: str | None = Field(None, max_length=255)
     deadline: datetime | None = None
+    is_active: bool | None = None
 
 
 class EventInDB(EventBase):

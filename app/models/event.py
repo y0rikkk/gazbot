@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean
 
 from app.database import Base
 
@@ -24,6 +24,9 @@ class Event(Base):
 
     # Дедлайн регистрации
     deadline = Column(DateTime, nullable=False)
+
+    # Статус
+    is_active = Column(Boolean, nullable=False, default=False)
 
     # Метаданные
     created_at = Column(DateTime, default=datetime.now())
