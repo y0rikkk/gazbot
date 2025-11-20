@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text
 
 from app.database import Base
 
@@ -22,16 +22,12 @@ class Event(Base):
     # Местоположение
     location = Column(String, nullable=True)
 
-    # Ограничения
-    max_participants = Column(Integer, nullable=True)
-
-    # Статус
-    is_active = Column(Boolean, default=True)
-    is_published = Column(Boolean, default=False)
+    # Дедлайн регистрации
+    deadline = Column(DateTime, nullable=False)
 
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
     def __repr__(self):
         return (

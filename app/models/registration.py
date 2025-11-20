@@ -19,11 +19,8 @@ class Registration(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
 
-    # Дополнительная информация о регистрации
-    comment = Column(Text, nullable=True)
-
     # Метаданные
-    registered_at = Column(DateTime, default=datetime.utcnow)
+    registered_at = Column(DateTime, default=datetime.now())
 
     def __repr__(self):
         return f"<Registration(id={self.id}, user_id={self.user_id}, event_id={self.event_id})>"
