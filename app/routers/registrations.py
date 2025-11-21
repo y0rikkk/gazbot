@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.registration import Registration
+from app.schemas.registration import Registration, RegistrationStatusEnum
 from app.services import event_crud, registration_crud
 from app.core.auth import CurrentUser
 from app.core.qr_code import generate_qr_code_image
@@ -62,6 +62,13 @@ def get_registration_qr_code(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. This registration belongs to another user.",
+        )
+
+    # Проверяем статус регистрации
+    if registration.status != RegistrationStatusEnum.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Registration is not accepted. Current status: {registration.status.value}",
         )
 
     # Генерируем QR-код с токеном

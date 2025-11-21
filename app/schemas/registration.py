@@ -16,6 +16,7 @@ class RegistrationStatusEnum(Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     DECLINED = "declined"
+    CANCELLED = "cancelled"
 
 
 class RegistrationBase(BaseModel):

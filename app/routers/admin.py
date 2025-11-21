@@ -51,7 +51,7 @@ def get_event_registrations(
     - event_id: ID мероприятия
     - skip: Количество записей для пропуска
     - limit: Максимальное количество записей
-    - status: Фильтр по статусу (pending, accepted, declined)
+    - status: Фильтр по статусу (pending, accepted, declined, cancelled)
     - sort_by: Сортировка по полю (registered_at, name)
     - sort_order: Порядок сортировки (asc, desc)
     """
@@ -89,7 +89,7 @@ def bulk_update_statuses(
 
     Body:
     - registration_ids: Список ID регистраций
-    - status: Новый статус (pending, accepted, declined)
+    - status: Новый статус (pending, accepted, declined, cancelled)
     """
     # Обновляем статусы
     updated_count = registration_crud.bulk_update_registration_statuses(
