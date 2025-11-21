@@ -1,10 +1,13 @@
 """Admin routes."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db
+
+logger = logging.getLogger(__name__)
 from app.schemas.registration import (
     RegistrationWithUserDetails,
     BulkUpdateStatusRequest,
@@ -94,16 +97,24 @@ def bulk_update_statuses(
     - status: Новый статус (pending, accepted, declined, cancelled)
     """
     # Обновляем статусы
+    logger.info(
+        f"Bulk status update: {len(request.registration_ids)} registrations "
+        f"to status={request.status.value}"
+    )
     updated_count = registration_crud.bulk_update_registration_statuses(
         db, request.registration_ids, request.status.value
     )
 
     if updated_count == 0:
+        logger.warning(
+            f"Bulk update failed: no registrations found for ids={request.registration_ids}"
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No registrations found with provided IDs",
         )
 
+    logger.info(f"Bulk update successful: {updated_count} registrations updated")
     return ResponseBase(
         success=True, message=f"Successfully updated {updated_count} registration(s)"
     )
@@ -127,9 +138,12 @@ def check_in_user(
     - token: Токен из QR-кода
     """
     # Находим регистрацию по токену
+    logger.info(f"Check-in attempt with token: {request.token[:10]}...")
     registration = registration_crud.get_registration_by_token(db, request.token)
 
     if not registration:
+        logger.warning(f"Check-in failed: Invalid token {request.token[:10]}...")
+        raise ValueError
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Registration not found. Invalid QR code token.",
@@ -137,6 +151,10 @@ def check_in_user(
 
     # Проверяем статус регистрации
     if registration.status != RegistrationStatusEnum.ACCEPTED:
+        logger.warning(
+            f"Check-in rejected: registration_id={registration.id}, "
+            f"status={registration.status.value}"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Registration is not accepted. Current status: {registration.status.value}",
@@ -144,6 +162,10 @@ def check_in_user(
 
     # Проверяем, не отмечен ли уже
     if registration.checked_in_at:
+        logger.info(
+            f"User already checked in: registration_id={registration.id}, "
+            f"user={registration.user.telegram_username}"
+        )
         return CheckInResponse(
             success=True,
             message=f"User already checked in at {registration.checked_in_at.strftime('%Y-%m-%d %H:%M:%S')}",
@@ -153,6 +175,10 @@ def check_in_user(
 
     # Отмечаем как пришедшего
     registration = registration_crud.mark_checked_in(db, registration.id)
+    logger.info(
+        f"Check-in successful: registration_id={registration.id}, "
+        f"user={registration.user.telegram_username or registration.user.telegram_id}"
+    )
 
     return CheckInResponse(
         success=True,
@@ -181,10 +207,15 @@ def create_event(
     - deadline: Крайний срок регистрации
     - is_active: Активно ли мероприятие (по умолчанию false)
     """
+    logger.info(f"Creating event: {event.title}, active={event.is_active}")
     try:
         db_event = event_crud.create_event(db, event)
+        logger.info(
+            f"Event created successfully: id={db_event.id}, title={db_event.title}"
+        )
         return db_event
-    except IntegrityError:
+    except IntegrityError as e:
+        logger.error(f"Failed to create event: {event.title}, error: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

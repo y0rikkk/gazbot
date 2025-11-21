@@ -3,6 +3,7 @@
 import hmac
 import hashlib
 import json
+import logging
 import time
 from typing import Annotated
 from urllib.parse import parse_qsl
@@ -15,6 +16,8 @@ from app.database import get_db
 from app.models.user import User
 from app.services import user_crud
 from app.schemas.user import UserCreate
+
+logger = logging.getLogger(__name__)
 
 
 def validate_init_data(init_data: str) -> dict:
@@ -101,9 +104,16 @@ def get_current_user(
     """
 
     if settings.DEV_MODE:
+        logger.warning("DEV_MODE authentication bypass enabled")
         try:
             telegram_id = int(x_telegram_init_data)
+            logger.debug(
+                f"DEV_MODE: Authenticating user with telegram_id={telegram_id}"
+            )
         except ValueError:
+            logger.error(
+                f"DEV_MODE: Invalid telegram_id format: {x_telegram_init_data}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="In DEV_MODE, X-Telegram-Init-Data must be a valid telegram_id (integer)",
@@ -111,11 +121,15 @@ def get_current_user(
 
         db_user = user_crud.get_user_by_telegram_id(db, telegram_id)
         if not db_user:
+            logger.error(f"DEV_MODE: User not found: telegram_id={telegram_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"User with telegram_id {telegram_id} not found in database",
             )
 
+        logger.info(
+            f"DEV_MODE: User authenticated: {db_user.telegram_username or db_user.telegram_id}"
+        )
         return db_user
 
     # Валидируем initData
@@ -136,6 +150,9 @@ def get_current_user(
 
     # Если пользователя нет - создаем
     if not db_user:
+        logger.info(
+            f"Creating new user: telegram_id={telegram_id}, username={user_data.get('username')}"
+        )
         user_create = UserCreate(
             telegram_id=telegram_id,
             telegram_username=user_data.get("username"),
@@ -145,6 +162,11 @@ def get_current_user(
             isu=None,
         )
         db_user = user_crud.create_user(db, user_create)
+        logger.info(f"New user created: id={db_user.id}, telegram_id={telegram_id}")
+    else:
+        logger.debug(
+            f"Existing user authenticated: {db_user.telegram_username or db_user.telegram_id}"
+        )
 
     return db_user
 
@@ -167,11 +189,18 @@ def get_current_admin(current_user: CurrentUser) -> User:
         HTTPException: Если пользователь не является администратором
     """
     if current_user.telegram_id not in settings.admin_ids_list:
+        logger.warning(
+            f"Access denied for user {current_user.telegram_id} "
+            f"({current_user.telegram_username}): not an admin"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Administrator privileges required.",
         )
 
+    logger.debug(
+        f"Admin access granted: {current_user.telegram_username or current_user.telegram_id}"
+    )
     return current_user
 
 
