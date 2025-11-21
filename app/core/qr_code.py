@@ -1,6 +1,7 @@
 """QR Code generation utilities."""
 
 import secrets
+from functools import lru_cache
 from io import BytesIO
 
 import qrcode
@@ -17,6 +18,7 @@ def generate_check_in_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+@lru_cache(maxsize=500)
 def generate_qr_code_image(data: str) -> bytes:
     """
     Генерация QR-кода в виде PNG изображения.
