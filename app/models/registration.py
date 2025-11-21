@@ -31,6 +31,10 @@ class Registration(Base):
         default=RegistrationStatusEnum.PENDING,
     )
 
+    # Check-in данные
+    check_in_token = Column(String(64), unique=True, nullable=False, index=True)
+    checked_in_at = Column(DateTime, nullable=True)
+
     # Метаданные
     registered_at = Column(DateTime, default=datetime.now())
 

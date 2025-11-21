@@ -37,6 +37,8 @@ class RegistrationInDB(RegistrationBase):
     user_id: int
     registered_at: datetime
     status: RegistrationStatusEnum
+    check_in_token: str
+    checked_in_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,7 +50,7 @@ class Registration(RegistrationInDB):
 
 
 class RegistrationWithUserDetails(Registration):
-    """Схема регистрации с деталями пользователя и события."""
+    """Схема регистрации с деталями пользователя."""
 
     user: User
 
@@ -64,3 +66,18 @@ class BulkUpdateStatusRequest(BaseModel):
 
     registration_ids: list[int] = Field(..., min_length=1)
     status: RegistrationStatusEnum
+
+
+class CheckInRequest(BaseModel):
+    """Схема для check-in запроса."""
+
+    token: str = Field(..., min_length=1)
+
+
+class CheckInResponse(BaseModel):
+    """Схема для check-in ответа."""
+
+    success: bool
+    message: str
+    user: User | None = None
+    checked_in_at: datetime | None = None

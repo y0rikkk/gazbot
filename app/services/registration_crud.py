@@ -1,22 +1,19 @@
 """CRUD operations for Registration model."""
 
+from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from app.models.user import User
 from app.models.registration import Registration
 from app.models.event import Event
 from app.schemas.registration import RegistrationCreate, RegistrationStatusEnum
-
-
-# def get_registration_by_id(db: Session, registration_id: int) -> Registration | None:
-#     """Получить регистрацию по ID."""
-#     return db.query(Registration).filter(Registration.id == registration_id).first()
+from app.core.qr_code import generate_check_in_token
 
 
 def get_user_registration(
     db: Session, user_id: int, event_id: int
 ) -> Registration | None:
-    """Проверить, зарегистрирован ли пользователь на мероприятие."""
+    """Получить регистрацию пользователя на мероприятие."""
     return (
         db.query(Registration)
         .filter(
@@ -40,20 +37,6 @@ def get_user_registrations(
     )
 
 
-# def get_event_registrations(
-#     db: Session, event_id: int, skip: int = 0, limit: int = 100
-# ) -> list[Registration]:
-#     """Получить все регистрации на мероприятие."""
-#     return (
-#         db.query(Registration)
-#         .filter(Registration.event_id == event_id)
-#         .order_by(Registration.registered_at)
-#         .offset(skip)
-#         .limit(limit)
-#         .all()
-#     )
-
-
 def create_registration(
     db: Session, user_id: int, registration: RegistrationCreate
 ) -> Registration:
@@ -61,27 +44,12 @@ def create_registration(
     db_registration = Registration(
         user_id=user_id,
         event_id=registration.event_id,
+        check_in_token=generate_check_in_token(),
     )
     db.add(db_registration)
     db.commit()
     db.refresh(db_registration)
     return db_registration
-
-
-# def delete_registration(db: Session, registration_id: int) -> bool:
-#     """Удалить регистрацию."""
-#     db_registration = get_registration_by_id(db, registration_id)
-#     if not db_registration:
-#         return False
-
-#     db.delete(db_registration)
-#     db.commit()
-#     return True
-
-
-# def count_event_registrations(db: Session, event_id: int) -> int:
-#     """Подсчитать количество регистраций на мероприятие."""
-#     return db.query(Registration).filter(Registration.event_id == event_id).count()
 
 
 def get_event_registrations_with_users(
@@ -161,3 +129,63 @@ def bulk_update_registration_statuses(
     db.commit()
 
     return updated_count
+
+
+def get_registration_by_id(db: Session, registration_id: int) -> Registration | None:
+    """
+    Получить регистрацию по ID с данными пользователя.
+
+    Args:
+        db: Database session
+        registration_id: ID регистрации
+
+    Returns:
+        Registration | None: Объект регистрации или None
+    """
+    return (
+        db.query(Registration)
+        .options(joinedload(Registration.user))
+        .filter(Registration.id == registration_id)
+        .first()
+    )
+
+
+def get_registration_by_token(db: Session, check_in_token: str) -> Registration | None:
+    """
+    Получить регистрацию по check-in токену.
+
+    Args:
+        db: Database session
+        check_in_token: Токен для check-in
+
+    Returns:
+        Registration | None: Объект регистрации или None
+    """
+    return (
+        db.query(Registration)
+        .options(joinedload(Registration.user))
+        .filter(Registration.check_in_token == check_in_token)
+        .first()
+    )
+
+
+def mark_checked_in(db: Session, registration_id: int) -> Registration | None:
+    """
+    Отметить регистрацию как checked-in (пользователь пришел на мероприятие).
+
+    Args:
+        db: Database session
+        registration_id: ID регистрации
+
+    Returns:
+        Registration | None: Обновленный объект регистрации или None
+    """
+    registration = get_registration_by_id(db, registration_id)
+    if not registration:
+        return None
+
+    registration.checked_in_at = datetime.now()
+    db.commit()
+    db.refresh(registration)
+
+    return registration

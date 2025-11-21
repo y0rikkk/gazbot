@@ -8,6 +8,8 @@ from app.schemas.registration import (
     RegistrationWithUserDetails,
     BulkUpdateStatusRequest,
     RegistrationStatusEnum,
+    CheckInRequest,
+    CheckInResponse,
 )
 from app.schemas.common import ResponseBase
 from app.services import registration_crud, event_crud
@@ -102,4 +104,57 @@ def bulk_update_statuses(
 
     return ResponseBase(
         success=True, message=f"Successfully updated {updated_count} registration(s)"
+    )
+
+
+@router.post("/check-in", response_model=CheckInResponse)
+def check_in_user(
+    request: CheckInRequest,
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Отметить приход пользователя на мероприятие по QR-коду.
+
+    Только для администраторов.
+
+    Админ сканирует QR-код пользователя на фронтенде,
+    извлекает токен и отправляет его сюда.
+
+    Body:
+    - token: Токен из QR-кода
+    """
+    # Находим регистрацию по токену
+    registration = registration_crud.get_registration_by_token(db, request.token)
+
+    if not registration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Registration not found. Invalid QR code token.",
+        )
+
+    # Проверяем статус регистрации
+    if registration.status != RegistrationStatusEnum.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Registration is not accepted. Current status: {registration.status.value}",
+        )
+
+    # Проверяем, не отмечен ли уже
+    if registration.checked_in_at:
+        return CheckInResponse(
+            success=True,
+            message=f"User already checked in at {registration.checked_in_at.strftime('%Y-%m-%d %H:%M:%S')}",
+            user=registration.user,
+            checked_in_at=registration.checked_in_at,
+        )
+
+    # Отмечаем как пришедшего
+    registration = registration_crud.mark_checked_in(db, registration.id)
+
+    return CheckInResponse(
+        success=True,
+        message="Check-in successful",
+        user=registration.user,
+        checked_in_at=registration.checked_in_at,
     )

@@ -18,7 +18,8 @@ dependencies = [
     "pydantic (>=2.12.4,<3.0.0)",
     "pydantic-settings (>=2.12.0,<3.0.0)",
     "alembic (>=1.17.2,<2.0.0)",
-    "python-dotenv (>=1.2.1,<2.0.0)"
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "qrcode[pil] (>=8.2,<9.0) ; python_version >= \"3.12\" and python_version < \"4.0\""
 ]
 
 
