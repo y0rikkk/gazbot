@@ -36,12 +36,12 @@ def get_event_registrations(
     ),
     sort_by: str = Query(
         "registered_at",
-        regex="^(registered_at|name)$",
+        pattern="^(registered_at|name)$",
         description="Поле для сортировки: registered_at или name",
     ),
     sort_order: str = Query(
         "asc",
-        regex="^(asc|desc)$",
+        pattern="^(asc|desc)$",
         description="Порядок сортировки: asc или desc",
     ),
     admin: CurrentAdmin = None,
