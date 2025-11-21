@@ -1,6 +1,7 @@
 """CRUD operations for User model."""
 
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
@@ -40,24 +41,16 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> User | No
 
     # Обновляем только те поля, которые были переданы
     update_data = user_update.model_dump(exclude_unset=True)
+    has_changes = False
+
     for field, value in update_data.items():
         if getattr(db_user, field) != value:
             setattr(db_user, field, value)
+            has_changes = True
+
+    if has_changes:
+        db_user.updated_at = datetime.now()
 
     db.commit()
     db.refresh(db_user)
     return db_user
-
-
-# def get_or_create_user(db: Session, user: UserCreate) -> tuple[User, bool]:
-#     """
-#     Получить существующего или создать нового пользователя.
-
-#     Returns:
-#         tuple[User, bool]: (пользователь, был_ли_создан)
-#     """
-#     db_user = get_user_by_telegram_id(db, user.telegram_id)
-#     if db_user:
-#         return db_user, False
-
-#     return create_user(db, user), True

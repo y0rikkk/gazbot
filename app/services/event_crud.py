@@ -1,6 +1,7 @@
 """CRUD operations for Event model."""
 
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.models.event import Event
 from app.models.registration import Registration
@@ -77,8 +78,15 @@ def update_event(db: Session, event_id: int, event_update: EventUpdate) -> Event
         return None
 
     update_data = event_update.model_dump(exclude_unset=True)
+    has_changes = False
+
     for field, value in update_data.items():
-        setattr(db_event, field, value)
+        if getattr(db_event, field) != value:
+            setattr(db_event, field, value)
+            has_changes = True
+
+    if has_changes:
+        db_event.updated_at = datetime.now()
 
     db.commit()
     db.refresh(db_event)
