@@ -7,6 +7,7 @@ from app.database import get_db
 from app.schemas.registration import (
     RegistrationWithUserDetails,
     BulkUpdateStatusRequest,
+    RegistrationStatusEnum,
 )
 from app.schemas.common import ResponseBase
 from app.services import registration_crud, event_crud
@@ -23,6 +24,19 @@ def get_event_registrations(
     event_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(1000, ge=1, le=1000),
+    status: RegistrationStatusEnum | None = Query(
+        None, description="Фильтр по статусу регистрации"
+    ),
+    sort_by: str = Query(
+        "registered_at",
+        regex="^(registered_at|name)$",
+        description="Поле для сортировки: registered_at или name",
+    ),
+    sort_order: str = Query(
+        "asc",
+        regex="^(asc|desc)$",
+        description="Порядок сортировки: asc или desc",
+    ),
     admin: CurrentAdmin = None,
     db: Session = Depends(get_db),
 ):
@@ -35,6 +49,9 @@ def get_event_registrations(
     - event_id: ID мероприятия
     - skip: Количество записей для пропуска
     - limit: Максимальное количество записей
+    - status: Фильтр по статусу (pending, accepted, declined)
+    - sort_by: Сортировка по полю (registered_at, name)
+    - sort_order: Порядок сортировки (asc, desc)
     """
     # Проверяем существование события
     event = event_crud.get_event_by_id(db, event_id)
@@ -45,7 +62,13 @@ def get_event_registrations(
 
     # Получаем регистрации с данными пользователей
     registrations = registration_crud.get_event_registrations_with_users(
-        db, event_id, skip, limit
+        db=db,
+        event_id=event_id,
+        skip=skip,
+        limit=limit,
+        status_filter=status,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
     return registrations

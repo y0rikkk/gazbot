@@ -85,24 +85,53 @@ def create_registration(
 
 
 def get_event_registrations_with_users(
-    db: Session, event_id: int, skip: int = 0, limit: int = 1000
+    db: Session,
+    event_id: int,
+    skip: int = 0,
+    limit: int = 1000,
+    status_filter: RegistrationStatusEnum | None = None,
+    sort_by: str = "registered_at",
+    sort_order: str = "asc",
 ) -> list[Registration]:
     """
     Получить все регистрации на мероприятие с данными пользователей.
 
     Использует joinedload для загрузки связанных пользователей.
-    """
 
-    return (
+    Args:
+        db: Database session
+        event_id: ID мероприятия
+        skip: Количество записей для пропуска
+        limit: Максимальное количество записей
+        status_filter: Фильтр по статусу регистрации
+        sort_by: Поле для сортировки ("registered_at" или "name")
+        sort_order: Порядок сортировки ("asc" или "desc")
+    """
+    query = (
         db.query(Registration)
         .filter(Registration.event_id == event_id)
         .join(User)
         .options(joinedload(Registration.user))
-        .order_by(Registration.registered_at)
-        .offset(skip)
-        .limit(limit)
-        .all()
     )
+
+    # Применяем фильтр по статусу если указан
+    if status_filter:
+        query = query.filter(Registration.status == status_filter)
+
+    # Применяем сортировку
+    if sort_by == "name":
+        # Сортировка по имени пользователя
+        order_column = User.first_name
+    else:
+        # По умолчанию сортировка по времени регистрации
+        order_column = Registration.registered_at
+
+    if sort_order == "desc":
+        query = query.order_by(order_column.desc())
+    else:
+        query = query.order_by(order_column.asc())
+
+    return query.offset(skip).limit(limit).all()
 
 
 def bulk_update_registration_statuses(
