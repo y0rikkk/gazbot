@@ -11,6 +11,7 @@ from app.schemas.registration import (
     CheckInRequest,
     CheckInResponse,
 )
+from app.schemas.event import Event, EventCreate, EventUpdate
 from app.schemas.common import ResponseBase
 from app.services import registration_crud, event_crud
 from app.core.auth import CurrentAdmin
@@ -158,3 +159,121 @@ def check_in_user(
         user=registration.user,
         checked_in_at=registration.checked_in_at,
     )
+
+
+@router.post("/events", response_model=Event, status_code=status.HTTP_201_CREATED)
+def create_event(
+    event: EventCreate,
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Создать новое мероприятие.
+
+    Только для администраторов.
+
+    Body:
+    - title: Название мероприятия
+    - description: Описание
+    - event_date: Дата и время мероприятия
+    - location: Место проведения
+    - deadline: Крайний срок регистрации
+    - is_active: Активно ли мероприятие (по умолчанию false)
+    """
+    db_event = event_crud.create_event(db, event)
+    return db_event
+
+
+@router.get("/events", response_model=list[Event])
+def get_all_events(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Получить список всех мероприятий.
+
+    Только для администраторов.
+
+    Параметры:
+    - skip: Количество записей для пропуска
+    - limit: Максимальное количество записей
+    """
+
+    return event_crud.get_all_events(db, skip, limit)
+
+
+@router.get("/events/{event_id}", response_model=Event)
+def get_event(
+    event_id: int,
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Получить мероприятие по ID.
+
+    Только для администраторов.
+
+    Параметры:
+    - event_id: ID мероприятия
+    """
+    event = event_crud.get_event_by_id(db, event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+    return event
+
+
+@router.put("/events/{event_id}", response_model=Event)
+def update_event(
+    event_id: int,
+    event_update: EventUpdate,
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Обновить мероприятие.
+
+    Только для администраторов.
+
+    Параметры:
+    - event_id: ID мероприятия
+
+    Body:
+    - title: Название мероприятия (опционально)
+    - description: Описание (опционально)
+    - event_date: Дата и время мероприятия (опционально)
+    - location: Место проведения (опционально)
+    - deadline: Крайний срок регистрации (опционально)
+    - is_active: Активно ли мероприятие (опционально)
+    """
+    db_event = event_crud.update_event(db, event_id, event_update)
+    if not db_event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+    return db_event
+
+
+@router.delete("/events/{event_id}", response_model=ResponseBase)
+def delete_event(
+    event_id: int,
+    admin: CurrentAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Удалить мероприятие.
+
+    Только для администраторов.
+
+    Параметры:
+    - event_id: ID мероприятия
+    """
+    success = event_crud.delete_event(db, event_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+    return ResponseBase(success=True, message="Event deleted successfully")
