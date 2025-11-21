@@ -23,18 +23,18 @@ def get_user_registration(
     )
 
 
-def get_user_registrations(
-    db: Session, user_id: int, skip: int = 0, limit: int = 100
-) -> list[Registration]:
-    """Получить все регистрации пользователя."""
-    return (
-        db.query(Registration)
-        .filter(Registration.user_id == user_id)
-        .order_by(Registration.registered_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+# def get_user_registrations(
+#     db: Session, user_id: int, skip: int = 0, limit: int = 100
+# ) -> list[Registration]:
+#     """Получить все регистрации пользователя."""
+#     return (
+#         db.query(Registration)
+#         .filter(Registration.user_id == user_id)
+#         .order_by(Registration.registered_at.desc())
+#         .offset(skip)
+#         .limit(limit)
+#         .all()
+#     )
 
 
 def create_registration(

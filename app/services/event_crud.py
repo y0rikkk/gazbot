@@ -1,15 +1,26 @@
 """CRUD operations for Event model."""
 
-from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.event import Event
+from app.models.registration import Registration
 from app.schemas.event import EventCreate, EventUpdate
 
 
 def get_event_by_id(db: Session, event_id: int) -> Event | None:
     """Получить мероприятие по ID."""
     return db.query(Event).filter(Event.id == event_id).first()
+
+
+def get_user_events(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return (
+        db.query(Event)
+        .join(Registration)
+        .filter(Registration.user_id == user_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def get_active_event(db: Session) -> Event | None:

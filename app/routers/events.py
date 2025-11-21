@@ -1,9 +1,8 @@
 """Event routes."""
 
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.database import get_db
 from app.schemas.event import Event
@@ -12,7 +11,6 @@ from app.schemas.registration import (
     RegistrationCreate,
     EventRegistrationRequest,
 )
-from app.schemas.common import ResponseBase
 from app.services import event_crud, registration_crud, user_crud
 from app.core.auth import CurrentUser
 
@@ -59,7 +57,11 @@ def register_for_event(
         )
 
     # Проверяем, не истек ли дедлайн регистрации и мероприятие активно
-    if event.deadline < datetime.now() or not event.is_active:
+    if (
+        event.deadline < datetime.now()
+        or not event.is_active
+        or event.event_date < datetime.now()
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Registration deadline has passed or event is not active",

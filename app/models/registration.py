@@ -29,8 +29,12 @@ class Registration(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Foreign keys
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    event_id = Column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Relationships
     user = relationship("User", backref="registrations")

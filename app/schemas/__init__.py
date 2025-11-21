@@ -6,7 +6,6 @@ from app.schemas.event import (
     EventCreate,
     EventUpdate,
     EventInDB,
-    EventWithRegistrationCount,
 )
 from app.schemas.registration import (
     Registration,
@@ -33,7 +32,6 @@ __all__ = [
     "EventCreate",
     "EventUpdate",
     "EventInDB",
-    "EventWithRegistrationCount",
     # Registration
     "Registration",
     "RegistrationCreate",

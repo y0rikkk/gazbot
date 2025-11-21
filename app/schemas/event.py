@@ -47,9 +47,3 @@ class Event(EventInDB):
     """Схема мероприятия для ответа API."""
 
     pass
-
-
-class EventWithRegistrationCount(Event):
-    """Схема мероприятия с количеством регистраций."""
-
-    registrations_count: int = 0
