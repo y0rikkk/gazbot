@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Admin Users (список telegram_id администраторов через запятую)
     ADMIN_TELEGRAM_IDS: str = ""
 
+    # Development mode (skip Telegram auth validation)
+    DEV_MODE: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True
     )

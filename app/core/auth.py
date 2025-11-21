@@ -87,6 +87,11 @@ def get_current_user(
     3. Создает пользователя в БД если его нет
     4. Возвращает объект User
 
+    В DEV_MODE:
+    - X-Telegram-Init-Data должен содержать только telegram_id
+    - Пример: "123456789"
+    - Валидация HMAC пропускается
+
     Args:
         x_telegram_init_data: initData из заголовка запроса
         db: Database session
@@ -94,6 +99,25 @@ def get_current_user(
     Returns:
         User: Объект пользователя из БД
     """
+
+    if settings.DEV_MODE:
+        try:
+            telegram_id = int(x_telegram_init_data)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="In DEV_MODE, X-Telegram-Init-Data must be a valid telegram_id (integer)",
+            )
+
+        db_user = user_crud.get_user_by_telegram_id(db, telegram_id)
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with telegram_id {telegram_id} not found in database",
+            )
+
+        return db_user
+
     # Валидируем initData
     parsed_data = validate_init_data(x_telegram_init_data)
 
