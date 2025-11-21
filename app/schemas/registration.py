@@ -1,13 +1,21 @@
 """Registration schemas."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from enum import Enum
 
 from pydantic import BaseModel, Field, ConfigDict
 
 from app.schemas.user import User
 from app.schemas.event import Event
 from app.schemas.user import UserUpdate
+
+
+class RegistrationStatusEnum(Enum):
+    """Статус регистрации на мероприятие."""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
 
 
 class RegistrationBase(BaseModel):
@@ -28,6 +36,7 @@ class RegistrationInDB(RegistrationBase):
     id: int
     user_id: int
     registered_at: datetime
+    status: RegistrationStatusEnum
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,14 +47,20 @@ class Registration(RegistrationInDB):
     pass
 
 
-class RegistrationWithDetails(Registration):
+class RegistrationWithUserDetails(Registration):
     """Схема регистрации с деталями пользователя и события."""
 
-    user: User | None = None
-    event: Event | None = None
+    user: User
 
 
 class EventRegistrationRequest(BaseModel):
     """Схема для регистрации на мероприятие (только данные для обновления)."""
 
     user_data: UserUpdate
+
+
+class BulkUpdateStatusRequest(BaseModel):
+    """Схема для массового обновления статусов регистраций."""
+
+    registration_ids: list[int] = Field(..., min_length=1)
+    status: RegistrationStatusEnum

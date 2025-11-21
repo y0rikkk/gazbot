@@ -151,3 +151,29 @@ def get_current_user(
 
 # Удобный alias для использования в роутерах
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    """
+    Dependency для проверки, что текущий пользователь является администратором.
+
+    Args:
+        current_user: Текущий пользователь (автоматически из get_current_user)
+
+    Returns:
+        User: Объект пользователя-администратора
+
+    Raises:
+        HTTPException: Если пользователь не является администратором
+    """
+    if current_user.telegram_id not in settings.admin_ids_list:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Administrator privileges required.",
+        )
+
+    return current_user
+
+
+# Удобный alias для использования в admin роутерах
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]

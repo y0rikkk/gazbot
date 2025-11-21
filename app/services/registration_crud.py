@@ -1,11 +1,11 @@
 """CRUD operations for Registration model."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
-
+from app.models.user import User
 from app.models.registration import Registration
 from app.models.event import Event
-from app.schemas.registration import RegistrationCreate
+from app.schemas.registration import RegistrationCreate, RegistrationStatusEnum
 
 
 # def get_registration_by_id(db: Session, registration_id: int) -> Registration | None:
@@ -82,3 +82,53 @@ def create_registration(
 # def count_event_registrations(db: Session, event_id: int) -> int:
 #     """Подсчитать количество регистраций на мероприятие."""
 #     return db.query(Registration).filter(Registration.event_id == event_id).count()
+
+
+def get_event_registrations_with_users(
+    db: Session, event_id: int, skip: int = 0, limit: int = 1000
+) -> list[Registration]:
+    """
+    Получить все регистрации на мероприятие с данными пользователей.
+
+    Использует joinedload для загрузки связанных пользователей.
+    """
+
+    return (
+        db.query(Registration)
+        .filter(Registration.event_id == event_id)
+        .join(User)
+        .options(joinedload(Registration.user))
+        .order_by(Registration.registered_at)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def bulk_update_registration_statuses(
+    db: Session, registration_ids: list[int], new_status: str
+) -> int:
+    """
+    Массово обновить статусы регистраций.
+
+    Args:
+        db: Database session
+        registration_ids: Список ID регистраций для обновления
+        new_status: Новый статус
+
+    Returns:
+        int: Количество обновленных записей
+    """
+
+    # Конвертируем строку в enum если нужно
+    if isinstance(new_status, str):
+        new_status = RegistrationStatusEnum(new_status)
+
+    updated_count = (
+        db.query(Registration)
+        .filter(Registration.id.in_(registration_ids))
+        .update({"status": new_status}, synchronize_session=False)
+    )
+    db.commit()
+
+    return updated_count
