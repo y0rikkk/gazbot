@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db
 from app.schemas.registration import (
@@ -180,8 +181,15 @@ def create_event(
     - deadline: Крайний срок регистрации
     - is_active: Активно ли мероприятие (по умолчанию false)
     """
-    db_event = event_crud.create_event(db, event)
-    return db_event
+    try:
+        db_event = event_crud.create_event(db, event)
+        return db_event
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot create active event: another active event already exists. Please deactivate the current active event first.",
+        )
 
 
 @router.get("/events", response_model=list[Event])
@@ -249,12 +257,19 @@ def update_event(
     - deadline: Крайний срок регистрации (опционально)
     - is_active: Активно ли мероприятие (опционально)
     """
-    db_event = event_crud.update_event(db, event_id, event_update)
-    if not db_event:
+    try:
+        db_event = event_crud.update_event(db, event_id, event_update)
+        if not db_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+        return db_event
+    except IntegrityError:
+        db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot activate event: another active event already exists. Please deactivate the current active event first.",
         )
-    return db_event
 
 
 @router.delete("/events/{event_id}", response_model=ResponseBase)

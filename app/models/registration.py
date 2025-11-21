@@ -3,7 +3,15 @@
 from datetime import datetime
 from app.schemas.registration import RegistrationStatusEnum
 
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, String, Text, Enum
+from sqlalchemy import (
+    Column,
+    Integer,
+    ForeignKey,
+    DateTime,
+    String,
+    Enum,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -13,6 +21,10 @@ class Registration(Base):
     """Модель регистрации на мероприятие."""
 
     __tablename__ = "registrations"
+    # Уникальность user_id и event_id
+    __table_args__ = (
+        UniqueConstraint("user_id", "event_id", name="uq_user_event_registration"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
 

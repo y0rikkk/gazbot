@@ -34,13 +34,19 @@ def get_all_events(db: Session, skip: int = 0, limit: int = 100) -> list[Event]:
 
 
 def create_event(db: Session, event: EventCreate) -> Event:
-    """Создать новое мероприятие."""
+    """
+    Создать новое мероприятие.
+
+    Raises:
+        IntegrityError: Если пытаемся создать второе активное мероприятие
+    """
     db_event = Event(
         title=event.title,
         description=event.description,
         event_date=event.event_date,
         location=event.location,
         deadline=event.deadline,
+        is_active=event.is_active,
     )
     db.add(db_event)
     db.commit()
@@ -49,7 +55,12 @@ def create_event(db: Session, event: EventCreate) -> Event:
 
 
 def update_event(db: Session, event_id: int, event_update: EventUpdate) -> Event | None:
-    """Обновить мероприятие."""
+    """
+    Обновить мероприятие.
+
+    Raises:
+        IntegrityError: Если пытаемся сделать активным второе мероприятие
+    """
     db_event = get_event_by_id(db, event_id)
     if not db_event:
         return None

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Index
 
 from app.database import Base
 
@@ -11,6 +11,15 @@ class Event(Base):
     """Модель мероприятия."""
 
     __tablename__ = "events"
+    # Может существовать только одно активное событие
+    __table_args__ = (
+        Index(
+            "ix_events_single_active",
+            "is_active",
+            unique=True,
+            postgresql_where=(Column("is_active") == True),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
