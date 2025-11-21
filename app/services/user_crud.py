@@ -16,20 +16,20 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-# def create_user(db: Session, user: UserCreate) -> User:
-#     """Создать нового пользователя."""
-#     db_user = User(
-#         telegram_id=user.telegram_id,
-#         telegram_username=user.telegram_username,
-#         first_name=user.first_name,
-#         last_name=user.last_name,
-#         phone=user.phone,
-#         isu=user.isu,
-#     )
-#     db.add(db_user)
-#     db.commit()
-#     db.refresh(db_user)
-#     return db_user
+def create_user(db: Session, user: UserCreate) -> User:
+    """Создать нового пользователя."""
+    db_user = User(
+        telegram_id=user.telegram_id,
+        telegram_username=user.telegram_username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        phone=user.phone,
+        isu=user.isu,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 
 def update_user(db: Session, user_id: int, user_update: UserUpdate) -> User | None:

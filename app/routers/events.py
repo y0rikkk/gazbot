@@ -14,7 +14,7 @@ from app.schemas.registration import (
 )
 from app.schemas.common import ResponseBase
 from app.services import event_crud, registration_crud, user_crud
-from app.schemas.user import UserUpdate
+from app.core.auth import CurrentUser
 
 router = APIRouter()
 
@@ -97,14 +97,13 @@ def get_current_event(
 def register_for_event(
     event_id: int,
     registration_request: EventRegistrationRequest,
+    user: CurrentUser,
     db: Session = Depends(get_db),
 ):
     """
     Зарегистрироваться на мероприятие.
 
-    Параметры:
-    - event_id: ID мероприятия
-    - registration_request: Данные для регистрации (обновляет данные пользователя)
+    Автоматически обновляет данные пользователя при регистрации.
     """
     # Проверяем существование события
     event = event_crud.get_event_by_id(db, event_id)
@@ -118,14 +117,6 @@ def register_for_event(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Registration deadline has passed or event is not active",
-        )
-
-    # Проверяем существование пользователя
-    user = user_crud.get_user_by_telegram_id(db, registration_request.telegram_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found. Please register first.",
         )
 
     # Обновляем данные пользователя

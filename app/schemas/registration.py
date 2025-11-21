@@ -46,7 +46,6 @@ class RegistrationWithDetails(Registration):
 
 
 class EventRegistrationRequest(BaseModel):
-    """Схема для регистрации на мероприятие."""
+    """Схема для регистрации на мероприятие (только данные для обновления)."""
 
-    telegram_id: int
     user_data: UserUpdate

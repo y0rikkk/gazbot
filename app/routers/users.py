@@ -4,29 +4,24 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.user import User, UserCreate, UserUpdate
+from app.schemas.user import User, UserUpdate
 from app.schemas.registration import Registration
 from app.schemas.event import Event
 from app.schemas.common import ResponseBase
 from app.services import user_crud, registration_crud
 from app.models import event as event_model
+from app.core.auth import CurrentUser
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=User)
-def get_current_user(telegram_id: int, db: Session = Depends(get_db)):
+def get_current_user_profile(user: CurrentUser):
     """
     Получить профиль текущего пользователя.
 
-    Параметры:
-    - telegram_id: ID пользователя в Telegram
+    Автоматически определяет пользователя из Telegram Web App initData.
     """
-    user = user_crud.get_user_by_telegram_id(db, telegram_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
     return user
 
 
@@ -56,29 +51,18 @@ def get_current_user(telegram_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/me", response_model=User)
-def update_current_user(
-    telegram_id: int, user_update: UserUpdate, db: Session = Depends(get_db)
+def update_current_user_profile(
+    user_update: UserUpdate, user: CurrentUser, db: Session = Depends(get_db)
 ):
     """
     Обновить профиль текущего пользователя.
-
-    Параметры:
-    - telegram_id: ID пользователя в Telegram
-    - user_update: Данные для обновления
     """
-    user = user_crud.get_user_by_telegram_id(db, telegram_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
     updated_user = user_crud.update_user(db, user.id, user_update)
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user",
         )
-
     return updated_user
 
 
@@ -106,22 +90,14 @@ def update_current_user(
 
 @router.get("/me/events", response_model=list[Event])
 def get_my_events(
-    telegram_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+    user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
 ):
     """
     Получить список мероприятий, на которых был пользователь.
-
-    Параметры:
-    - telegram_id: ID пользователя в Telegram
-    - skip: Количество записей для пропуска
-    - limit: Максимальное количество записей
     """
-    user = user_crud.get_user_by_telegram_id(db, telegram_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
     registrations = registration_crud.get_user_registrations(db, user.id, skip, limit)
 
     # Получаем события для каждой регистрации
@@ -139,18 +115,10 @@ def get_my_events(
 
 
 @router.get("/greeting")
-def get_greeting(telegram_id: int, db: Session = Depends(get_db)):
+def get_greeting(user: CurrentUser):
     """
     Получить приветствие для главной страницы.
-
-    Параметры:
-    - telegram_id: ID пользователя в Telegram
     """
-    user = user_crud.get_user_by_telegram_id(db, telegram_id)
-
-    if user and user.first_name:
-        name = user.first_name
-    else:
-        name = "Гость"
+    name = user.first_name if user.first_name else "Гость"
 
     return ResponseBase(success=True, message=f"Привет, {name}!", data={"name": name})
