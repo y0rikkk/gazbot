@@ -28,8 +28,8 @@ router = APIRouter()
                         "telegram_username": "john_doe",
                         "first_name": "Иван",
                         "last_name": "Иванов",
-                        "phone_number": "+79991234567",
-                        "email": "ivan@example.com",
+                        "phone": "+79991234567",
+                        "isu": 123456,
                     }
                 }
             },
@@ -77,9 +77,9 @@ def get_current_user_profile(user: CurrentUser):
                         "telegram_id": 123456789,
                         "telegram_username": "john_doe",
                         "first_name": "Иван",
-                        "last_name": "Петров",
-                        "phone_number": "+79991234567",
-                        "email": "ivan.petrov@example.com",
+                        "last_name": "Иванов",
+                        "phone": "+79991234567",
+                        "isu": 123456,
                     }
                 }
             },
@@ -109,9 +109,8 @@ def update_current_user_profile(
     Можно обновить следующие поля:
     - `first_name` - Имя
     - `last_name` - Фамилия
-    - `phone_number` - Номер телефона
-    - `email` - Email адрес
-    - `telegram_username` - Telegram username
+    - `phone` - Номер телефона
+    - `isu` - ИСУ
 
     Все поля опциональны - обновляются только переданные поля.
     """
@@ -163,12 +162,12 @@ def get_my_events(
     db: Session = Depends(get_db),
 ):
     """
-    Получить список мероприятий, на которых был пользователь.
+    Получить список мероприятий с принятыми регистрациями.
 
     **Требует аутентификации через Telegram Mini App.**
 
-    Возвращает все мероприятия, на которые пользователь регистрировался,
-    независимо от статуса регистрации.
+    Возвращает только те мероприятия, на которые регистрация пользователя
+    была подтверждена (статус `accepted`).
 
     **Параметры пагинации:**
     - `skip` - сколько записей пропустить (default: 0)

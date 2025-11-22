@@ -6,6 +6,7 @@ from datetime import datetime
 from app.models.event import Event
 from app.models.registration import Registration
 from app.schemas.event import EventCreate, EventUpdate
+from app.schemas.registration import RegistrationStatusEnum
 
 
 def get_event_by_id(db: Session, event_id: int) -> Event | None:
@@ -14,10 +15,14 @@ def get_event_by_id(db: Session, event_id: int) -> Event | None:
 
 
 def get_user_events(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    """Получить мероприятия пользователя с принятыми регистрациями."""
     return (
         db.query(Event)
         .join(Registration)
-        .filter(Registration.user_id == user_id)
+        .filter(
+            Registration.user_id == user_id,
+            Registration.status == RegistrationStatusEnum.ACCEPTED,
+        )
         .offset(skip)
         .limit(limit)
         .all()
