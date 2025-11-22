@@ -37,10 +37,30 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
 
-# Configure CORS для Telegram Web App
+# CORS настройки
+if settings.DEBUG:
+    # Development: разрешаем localhost для локальной разработки фронтенда
+    cors_origins = [
+        "http://localhost:3000",  # React/Next.js default
+        "http://localhost:5173",  # Vite default
+        "http://localhost:8080",  # Vue CLI default
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "https://web.telegram.org",  # Telegram Web App
+    ]
+    logger.info(f"CORS enabled for development origins: {cors_origins}")
+else:
+    # Production: только Telegram domains
+    cors_origins = [
+        "https://web.telegram.org",
+        "https://*.telegram.org",
+    ]
+    logger.info(f"CORS enabled for production origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://web.telegram.org"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

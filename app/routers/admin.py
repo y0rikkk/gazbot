@@ -143,7 +143,6 @@ def check_in_user(
 
     if not registration:
         logger.warning(f"Check-in failed: Invalid token {request.token[:10]}...")
-        raise ValueError
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Registration not found. Invalid QR code token.",
