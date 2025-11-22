@@ -12,6 +12,7 @@ from app.schemas.registration import (
     RegistrationCreate,
     RegistrationInDB,
     RegistrationWithUserDetails,
+    RegistrationStatusEnum,
 )
 from app.schemas.telegram import TelegramUser, TelegramWebAppData, MessageSend
 from app.schemas.common import (
@@ -37,6 +38,7 @@ __all__ = [
     "RegistrationCreate",
     "RegistrationInDB",
     "RegistrationWithUserDetails",
+    "RegistrationStatusEnum",
     # Telegram
     "TelegramUser",
     "TelegramWebAppData",

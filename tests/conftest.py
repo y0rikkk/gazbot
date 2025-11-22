@@ -48,3 +48,40 @@ def client(db_session):
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_user(db_session, monkeypatch):
+    """Fixture для создания админского пользователя.
+
+    Устанавливает ADMIN_IDS в переменные окружения и создает пользователя в БД.
+    """
+    from app.models import User
+    from app.core.config import settings
+
+    admin_id = 123456789
+
+    # Патчим переменную окружения
+    monkeypatch.setenv("ADMIN_TELEGRAM_IDS", str(admin_id))
+
+    # Патчим саму проперти admin_ids_list в settings
+    monkeypatch.setattr(
+        type(settings), "admin_ids_list", property(lambda self: [admin_id])
+    )
+
+    # Создаем пользователя в БД
+    admin = User(
+        telegram_id=admin_id,
+        telegram_username="admin_user",
+        first_name="Admin",
+        last_name="User",
+    )
+    db_session.add(admin)
+    db_session.commit()
+
+    return {
+        "id": admin_id,
+        "first_name": "Admin",
+        "last_name": "User",
+        "username": "admin_user",
+    }
