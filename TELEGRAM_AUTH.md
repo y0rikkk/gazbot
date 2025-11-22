@@ -1,4 +1,4 @@
-# Telegram Web App Authentication
+# Telegram Web App Authentication by чатгпт
 
 ## Как это работает
 
@@ -53,29 +53,6 @@ fetch("http://your-api.com/api/users/me", {
 # 5. Возвращает User объект
 ```
 
-### 4. Использование в роутерах
-
-**До (старый способ):**
-
-```python
-@router.get("/me")
-def get_user(telegram_id: int, db: Session = Depends(get_db)):
-    user = user_crud.get_user_by_telegram_id(db, telegram_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-```
-
-**После (с CurrentUser):**
-
-```python
-from app.core.auth import CurrentUser
-
-@router.get("/me")
-def get_user(current_user: CurrentUser):
-    return current_user  # Пользователь уже готов!
-```
-
 ## Примеры запросов
 
 ### Получить профиль
@@ -113,37 +90,3 @@ curl -X POST "http://localhost:8000/api/events/1/register" \
     }
   }'
 ```
-
-### Получить приветствие
-
-```bash
-curl -X GET "http://localhost:8000/api/users/greeting" \
-  -H "X-Telegram-Init-Data: query_id=...&user=...&hash=..."
-```
-
-## Преимущества
-
-✅ **Безопасность** - криптографическая проверка данных  
-✅ **Автоматизация** - пользователь создается автоматически  
-✅ **Удобство** - не нужно передавать telegram_id везде  
-✅ **Чистый код** - `CurrentUser` dependency используется везде одинаково  
-✅ **Актуальность** - всегда свежая информация из Telegram
-
-## Важно
-
-1. **Telegram Bot Token должен быть в `.env`**
-
-   ```
-   TELEGRAM_BOT_TOKEN=your_bot_token_here
-   ```
-
-2. **CORS настроен только для `https://web.telegram.org`**
-
-   - В production нужно добавить свой домен
-
-3. **initData действителен 24 часа**
-
-   - После этого пользователь должен перезапустить Web App
-
-4. **Все endpoints теперь требуют `X-Telegram-Init-Data` заголовок**
-   - Кроме `/` и `/health`

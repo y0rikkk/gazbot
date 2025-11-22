@@ -29,3 +29,8 @@ alembic/versions/*.pyc
 # Logs
 *.log
 logs/
+
+# My md files
+OLD_CHECKLIST.md
+OLD_DOCKER.md
+OLD_README.md
