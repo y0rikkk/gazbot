@@ -35,11 +35,9 @@ services:
       ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
 
       # Application Settings
-      DEBUG: ${DEBUG:-true}
+      DEBUG: ${DEBUG:-false}
       DEV_MODE: ${DEV_MODE:-false}
 
-      # Logging
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "8000:8000"
     volumes:
