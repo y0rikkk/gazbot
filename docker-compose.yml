@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: gazbot_postgres
+    environment:
+      POSTGRES_USER: gazbot
+      POSTGRES_PASSWORD: gazbot_password
+      POSTGRES_DB: gazbot_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gazbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gazbot_app
+    environment:
+      # Database
+      DATABASE_URL: postgresql://gazbot:gazbot_password@postgres:5432/gazbot_db
+      POSTGRES_PASSWORD: gazbot_password
+
+      # Telegram Bot
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-}
+
+      # Admin IDs (через запятую)
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS}
+
+      # Application Settings
+      DEBUG: ${DEBUG:-true}
+      DEV_MODE: ${DEV_MODE:-false}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

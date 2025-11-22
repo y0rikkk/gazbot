@@ -13,14 +13,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
-    # PostgreSQL (опциональные, для docker-compose)
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "admin"
-    POSTGRES_DB: str = "gazbot"
-
     # Telegram
-    TELEGRAM_BOT_TOKEN: str = "your_bot_token_here"
-    TELEGRAM_BOT_USERNAME: str = "your_bot_username"
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_BOT_USERNAME: str
 
     # Admin Users (список telegram_id администраторов через запятую)
     ADMIN_TELEGRAM_IDS: str = ""
