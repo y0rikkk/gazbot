@@ -141,3 +141,9 @@ docker-compose exec postgres pg_dump -U gazbot gazbot_db > backup.sql
 ```bash
 docker-compose exec -T postgres psql -U gazbot gazbot_db < backup.sql
 ```
+
+### Посмотреть переменные окружения:
+
+```bash
+docker exec gazbot_app printenv
+```
