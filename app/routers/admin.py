@@ -26,6 +26,49 @@ router = APIRouter()
 @router.get(
     "/events/{event_id}/registrations",
     response_model=list[RegistrationWithUserDetails],
+    responses={
+        200: {
+            "description": "Список регистраций с данными пользователей",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 1,
+                            "user_id": 1,
+                            "event_id": 1,
+                            "status": "accepted",
+                            "check_in_token": "abc123xyz",
+                            "checked_in": True,
+                            "checked_in_at": "2025-12-15T18:30:00",
+                            "created_at": "2025-12-05T10:00:00",
+                            "updated_at": "2025-12-15T18:30:00",
+                            "user": {
+                                "id": 1,
+                                "telegram_id": 123456789,
+                                "telegram_username": "john_doe",
+                                "first_name": "Иван",
+                                "last_name": "Иванов",
+                                "phone_number": "+79991234567",
+                                "email": "ivan@example.com",
+                            },
+                        }
+                    ]
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Мероприятие не найдено",
+            "content": {"application/json": {"example": {"detail": "Event not found"}}},
+        },
+    },
 )
 def get_event_registrations(
     event_id: int,
@@ -50,15 +93,18 @@ def get_event_registrations(
     """
     Получить список всех регистраций на мероприятие с информацией о пользователях.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Параметры:
-    - event_id: ID мероприятия
-    - skip: Количество записей для пропуска
-    - limit: Максимальное количество записей
-    - status: Фильтр по статусу (pending, accepted, declined, cancelled)
-    - sort_by: Сортировка по полю (registered_at, name)
-    - sort_order: Порядок сортировки (asc, desc)
+    Возвращает полные данные о регистрациях включая информацию о пользователях,
+    статус чек-ина и токен для QR-кода.
+
+    **Параметры:**
+    - `event_id` - ID мероприятия
+    - `skip` - Количество записей для пропуска (пагинация)
+    - `limit` - Максимальное количество записей (max: 1000)
+    - `status` - Фильтр по статусу (pending, accepted, declined, cancelled)
+    - `sort_by` - Сортировка по полю (registered_at, name)
+    - `sort_order` - Порядок сортировки (asc, desc)
     """
     # Проверяем существование события
     event = event_crud.get_event_by_id(db, event_id)
@@ -81,7 +127,39 @@ def get_event_registrations(
     return registrations
 
 
-@router.post("/registrations/bulk_update_statuses", response_model=ResponseBase)
+@router.post(
+    "/registrations/bulk_update_statuses",
+    response_model=ResponseBase,
+    responses={
+        200: {
+            "description": "Статусы успешно обновлены",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "message": "Successfully updated 5 registration(s)",
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Регистрации с указанными ID не найдены",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "No registrations found with provided IDs"}
+                }
+            },
+        },
+    },
+)
 def bulk_update_statuses(
     request: BulkUpdateStatusRequest,
     admin: CurrentAdmin = None,
@@ -90,11 +168,14 @@ def bulk_update_statuses(
     """
     Массово обновить статусы регистраций.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Body:
-    - registration_ids: Список ID регистраций
-    - status: Новый статус (pending, accepted, declined, cancelled)
+    Позволяет одновременно изменить статус для нескольких регистраций.
+    Полезно для массового принятия/отклонения заявок.
+
+    **Body:**
+    - `registration_ids` - Список ID регистраций для обновления
+    - `status` - Новый статус (pending, accepted, declined, cancelled)
     """
     # Обновляем статусы
     logger.info(
@@ -120,7 +201,83 @@ def bulk_update_statuses(
     )
 
 
-@router.post("/check-in", response_model=CheckInResponse)
+@router.post(
+    "/check-in",
+    response_model=CheckInResponse,
+    responses={
+        200: {
+            "description": "Пользователь успешно отмечен",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "new_checkin": {
+                            "summary": "Новый чек-ин",
+                            "value": {
+                                "success": True,
+                                "message": "Check-in successful",
+                                "user": {
+                                    "id": 1,
+                                    "telegram_id": 123456789,
+                                    "telegram_username": "john_doe",
+                                    "first_name": "Иван",
+                                    "last_name": "Иванов",
+                                    "phone_number": "+79991234567",
+                                    "email": "ivan@example.com",
+                                },
+                                "checked_in_at": "2025-12-15T18:30:00",
+                            },
+                        },
+                        "already_checked": {
+                            "summary": "Уже был отмечен ранее",
+                            "value": {
+                                "success": True,
+                                "message": "User already checked in at 2025-12-15 18:30:00",
+                                "user": {
+                                    "id": 1,
+                                    "telegram_id": 123456789,
+                                    "telegram_username": "john_doe",
+                                    "first_name": "Иван",
+                                    "last_name": "Иванов",
+                                    "phone_number": "+79991234567",
+                                    "email": "ivan@example.com",
+                                },
+                                "checked_in_at": "2025-12-15T18:30:00",
+                            },
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Регистрация не в статусе accepted",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Registration is not accepted. Current status: pending"
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Регистрация не найдена по токену",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Registration not found. Invalid QR code token."
+                    }
+                }
+            },
+        },
+    },
+)
 def check_in_user(
     request: CheckInRequest,
     admin: CurrentAdmin = None,
@@ -129,13 +286,20 @@ def check_in_user(
     """
     Отметить приход пользователя на мероприятие по QR-коду.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
     Админ сканирует QR-код пользователя на фронтенде,
-    извлекает токен и отправляет его сюда.
+    извлекает `check_in_token` и отправляет его в этот эндпоинт.
 
-    Body:
-    - token: Токен из QR-кода
+    Система проверяет:
+    1. Существует ли регистрация с таким токеном
+    2. Имеет ли регистрация статус `accepted`
+    3. Не был ли пользователь уже отмечен ранее
+
+    Если пользователь уже был отмечен, возвращает время первого чек-ина.
+
+    **Body:**
+    - `token` - Токен из QR-кода (check_in_token)
     """
     # Находим регистрацию по токену
     logger.info(f"Check-in attempt with token: {request.token[:10]}...")
@@ -187,7 +351,49 @@ def check_in_user(
     )
 
 
-@router.post("/events", response_model=Event, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/events",
+    response_model=Event,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {
+            "description": "Мероприятие успешно создано",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "title": "Встреча с Газпромом",
+                        "description": "Ежегодная встреча с партнерами",
+                        "event_date": "2025-12-15T18:00:00",
+                        "location": "Офис Газпрома, Москва",
+                        "deadline": "2025-12-10T23:59:59",
+                        "is_active": True,
+                        "created_at": "2025-11-20T10:00:00",
+                        "updated_at": "2025-11-20T10:00:00",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Нельзя создать активное мероприятие - уже существует другое активное",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Cannot create active event: another active event already exists. Please deactivate the current active event first."
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+    },
+)
 def create_event(
     event: EventCreate,
     admin: CurrentAdmin = None,
@@ -196,15 +402,18 @@ def create_event(
     """
     Создать новое мероприятие.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Body:
-    - title: Название мероприятия
-    - description: Описание
-    - event_date: Дата и время мероприятия
-    - location: Место проведения
-    - deadline: Крайний срок регистрации
-    - is_active: Активно ли мероприятие (по умолчанию false)
+    **Ограничение:** В системе может быть только одно активное мероприятие.
+    Если пытаетесь создать активное мероприятие при наличии другого активного - получите ошибку 400.
+
+    **Body:**
+    - `title` - Название мероприятия (обязательно)
+    - `description` - Описание (обязательно)
+    - `event_date` - Дата и время мероприятия (обязательно)
+    - `location` - Место проведения (обязательно)
+    - `deadline` - Крайний срок регистрации (обязательно)
+    - `is_active` - Активно ли мероприятие (по умолчанию false)
     """
     logger.info(f"Creating event: {event.title}, active={event.is_active}")
     try:
@@ -222,7 +431,40 @@ def create_event(
         )
 
 
-@router.get("/events", response_model=list[Event])
+@router.get(
+    "/events",
+    response_model=list[Event],
+    responses={
+        200: {
+            "description": "Список всех мероприятий",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 1,
+                            "title": "Встреча с Газпромом",
+                            "description": "Ежегодная встреча",
+                            "event_date": "2025-12-15T18:00:00",
+                            "location": "Офис Газпрома",
+                            "deadline": "2025-12-10T23:59:59",
+                            "is_active": True,
+                            "created_at": "2025-11-20T10:00:00",
+                            "updated_at": "2025-11-20T10:00:00",
+                        }
+                    ]
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+    },
+)
 def get_all_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -232,17 +474,54 @@ def get_all_events(
     """
     Получить список всех мероприятий.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Параметры:
-    - skip: Количество записей для пропуска
-    - limit: Максимальное количество записей
+    Возвращает все мероприятия (активные и неактивные) с пагинацией.
+
+    **Параметры:**
+    - `skip` - Количество записей для пропуска (default: 0)
+    - `limit` - Максимальное количество записей (default: 100, max: 1000)
     """
 
     return event_crud.get_all_events(db, skip, limit)
 
 
-@router.get("/events/{event_id}", response_model=Event)
+@router.get(
+    "/events/{event_id}",
+    response_model=Event,
+    responses={
+        200: {
+            "description": "Информация о мероприятии",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "title": "Встреча с Газпромом",
+                        "description": "Ежегодная встреча",
+                        "event_date": "2025-12-15T18:00:00",
+                        "location": "Офис Газпрома",
+                        "deadline": "2025-12-10T23:59:59",
+                        "is_active": True,
+                        "created_at": "2025-11-20T10:00:00",
+                        "updated_at": "2025-11-20T10:00:00",
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Мероприятие не найдено",
+            "content": {"application/json": {"example": {"detail": "Event not found"}}},
+        },
+    },
+)
 def get_event(
     event_id: int,
     admin: CurrentAdmin = None,
@@ -251,10 +530,10 @@ def get_event(
     """
     Получить мероприятие по ID.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Параметры:
-    - event_id: ID мероприятия
+    **Параметры:**
+    - `event_id` - ID мероприятия
     """
     event = event_crud.get_event_by_id(db, event_id)
     if not event:
@@ -264,7 +543,52 @@ def get_event(
     return event
 
 
-@router.put("/events/{event_id}", response_model=Event)
+@router.put(
+    "/events/{event_id}",
+    response_model=Event,
+    responses={
+        200: {
+            "description": "Мероприятие успешно обновлено",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "title": "Встреча с Газпромом (обновлено)",
+                        "description": "Ежегодная встреча с партнерами",
+                        "event_date": "2025-12-15T19:00:00",
+                        "location": "Офис Газпрома",
+                        "deadline": "2025-12-12T23:59:59",
+                        "is_active": True,
+                        "created_at": "2025-11-20T10:00:00",
+                        "updated_at": "2025-11-25T14:30:00",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Нельзя активировать мероприятие - уже есть другое активное",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Cannot activate event: another active event already exists. Please deactivate the current active event first."
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Мероприятие не найдено",
+            "content": {"application/json": {"example": {"detail": "Event not found"}}},
+        },
+    },
+)
 def update_event(
     event_id: int,
     event_update: EventUpdate,
@@ -274,18 +598,20 @@ def update_event(
     """
     Обновить мероприятие.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Параметры:
-    - event_id: ID мероприятия
+    **Ограничение:** Нельзя активировать мероприятие, если уже есть другое активное.
 
-    Body:
-    - title: Название мероприятия (опционально)
-    - description: Описание (опционально)
-    - event_date: Дата и время мероприятия (опционально)
-    - location: Место проведения (опционально)
-    - deadline: Крайний срок регистрации (опционально)
-    - is_active: Активно ли мероприятие (опционально)
+    **Параметры:**
+    - `event_id` - ID мероприятия
+
+    **Body (все поля опциональны):**
+    - `title` - Название мероприятия
+    - `description` - Описание
+    - `event_date` - Дата и время мероприятия
+    - `location` - Место проведения
+    - `deadline` - Крайний срок регистрации
+    - `is_active` - Активно ли мероприятие
     """
     try:
         db_event = event_crud.update_event(db, event_id, event_update)
@@ -302,7 +628,35 @@ def update_event(
         )
 
 
-@router.delete("/events/{event_id}", response_model=ResponseBase)
+@router.delete(
+    "/events/{event_id}",
+    response_model=ResponseBase,
+    responses={
+        200: {
+            "description": "Мероприятие успешно удалено",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "message": "Event deleted successfully",
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован как администратор",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated as admin"}
+                }
+            },
+        },
+        404: {
+            "description": "Мероприятие не найдено",
+            "content": {"application/json": {"example": {"detail": "Event not found"}}},
+        },
+    },
+)
 def delete_event(
     event_id: int,
     admin: CurrentAdmin = None,
@@ -311,10 +665,12 @@ def delete_event(
     """
     Удалить мероприятие.
 
-    Только для администраторов.
+    **Только для администраторов.**
 
-    Параметры:
-    - event_id: ID мероприятия
+    **Внимание:** При удалении мероприятия также удаляются все связанные регистрации.
+
+    **Параметры:**
+    - `event_id` - ID мероприятия
     """
     success = event_crud.delete_event(db, event_id)
     if not success:
