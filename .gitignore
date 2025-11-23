@@ -30,6 +30,10 @@ alembic/versions/*.pyc
 *.log
 logs/
 
+# Payment receipts (но не .gitkeep)
+receipts/*
+!receipts/.gitkeep
+
 # My md files
 OLD_CHECKLIST.md
 OLD_DOCKER.md
