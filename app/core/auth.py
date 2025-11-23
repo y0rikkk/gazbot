@@ -160,6 +160,7 @@ def get_current_user(
             last_name=user_data.get("last_name"),
             phone=None,
             isu=None,
+            address=None,
         )
         db_user = user_crud.create_user(db, user_create)
         logger.info(f"New user created: id={db_user.id}, telegram_id={telegram_id}")

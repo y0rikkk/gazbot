@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     isu: int | None = Field(
         None, ge=100000, le=999999, description="ИСУ номер (6 цифр)"
     )
+    address: str | None = Field(None, max_length=500)
 
 
 class UserCreate(UserBase):
@@ -30,6 +31,7 @@ class UserUpdate(BaseModel):
     last_name: str | None = Field(None, max_length=255)
     phone: str | None = Field(None, max_length=50)
     isu: int | None = Field(None, ge=100000, le=999999)
+    address: str | None = Field(None, max_length=500)
 
 
 class UserInDB(UserBase):

@@ -22,6 +22,7 @@ def test_create_user_service(db_session):
         last_name="User",
         phone="+1234567890",
         isu=123456,
+        address="Test Address",
     )
 
     user = user_crud.create_user(db_session, user_data)

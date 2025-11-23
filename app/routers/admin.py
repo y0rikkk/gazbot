@@ -50,6 +50,7 @@ router = APIRouter()
                                 "last_name": "Иванов",
                                 "phone": "+79991234567",
                                 "isu": 123456,
+                                "address": "Кронверкский пр., 49",
                             },
                         }
                     ]
@@ -223,6 +224,7 @@ def bulk_update_statuses(
                                     "last_name": "Иванов",
                                     "phone": "+79991234567",
                                     "isu": 123456,
+                                    "address": "Кронверкский пр., 49",
                                 },
                                 "checked_in_at": "2025-12-15T18:30:00",
                             },
@@ -240,6 +242,7 @@ def bulk_update_statuses(
                                     "last_name": "Иванов",
                                     "phone": "+79991234567",
                                     "isu": 123456,
+                                    "address": "Кронверкский пр., 49",
                                 },
                                 "checked_in_at": "2025-12-15T18:30:00",
                             },

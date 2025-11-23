@@ -27,9 +27,10 @@ router = APIRouter()
                         "telegram_id": 123456789,
                         "telegram_username": "john_doe",
                         "first_name": "Иван",
-                        "last_name": "Иванов",
+                        "last_name": "Петров",
                         "phone": "+79991234567",
                         "isu": 123456,
+                        "address": "Кронверкский пр., 49",
                     }
                 }
             },
@@ -80,6 +81,7 @@ def get_current_user_profile(user: CurrentUser):
                         "last_name": "Иванов",
                         "phone": "+79991234567",
                         "isu": 123456,
+                        "address": "Кронверкский пр., 49",
                     }
                 }
             },
@@ -111,6 +113,7 @@ def update_current_user_profile(
     - `last_name` - Фамилия
     - `phone` - Номер телефона
     - `isu` - ИСУ
+    - `address` - Адрес
 
     Все поля опциональны - обновляются только переданные поля.
     """

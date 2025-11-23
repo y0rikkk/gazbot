@@ -26,6 +26,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         last_name=user.last_name,
         phone=user.phone,
         isu=user.isu,
+        address=user.address,
     )
     db.add(db_user)
     db.commit()

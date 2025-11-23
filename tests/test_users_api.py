@@ -17,6 +17,7 @@ def test_get_current_user_dev_mode(client, db_session, monkeypatch):
         last_name="User",
         phone="+1234567890",
         isu=123456,
+        address="Test Address",
     )
 
     db_session.add(user)
@@ -36,6 +37,7 @@ def test_get_current_user_dev_mode(client, db_session, monkeypatch):
     assert data["last_name"] == "User"
     assert data["phone"] == "+1234567890"
     assert data["isu"] == 123456
+    assert data["address"] == "Test Address"
 
 
 def test_update_current_user_dev_mode(client, db_session, monkeypatch):
@@ -61,6 +63,7 @@ def test_update_current_user_dev_mode(client, db_session, monkeypatch):
             "last_name": "Name",
             "phone": "+9876543210",
             "isu": 654321,
+            "address": "New Address",
         },
     )
 
@@ -70,6 +73,7 @@ def test_update_current_user_dev_mode(client, db_session, monkeypatch):
     assert data["last_name"] == "Name"
     assert data["phone"] == "+9876543210"
     assert data["isu"] == 654321
+    assert data["address"] == "New Address"
 
 
 def test_get_user_unauthorized(client, db_session):
