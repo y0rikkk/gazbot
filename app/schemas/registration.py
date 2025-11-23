@@ -17,6 +17,8 @@ class RegistrationStatusEnum(Enum):
     ACCEPTED = "accepted"
     DECLINED = "declined"
     CANCELLED = "cancelled"
+    PAYMENT = "payment"
+    REJECTED = "rejected"
 
 
 class RegistrationBase(BaseModel):

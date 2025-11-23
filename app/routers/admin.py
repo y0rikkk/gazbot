@@ -102,7 +102,7 @@ def get_event_registrations(
     - `event_id` - ID мероприятия
     - `skip` - Количество записей для пропуска (пагинация)
     - `limit` - Максимальное количество записей (max: 1000)
-    - `status` - Фильтр по статусу (pending, accepted, declined, cancelled)
+    - `status` - Фильтр по статусу
     - `sort_by` - Сортировка по полю (registered_at, name)
     - `sort_order` - Порядок сортировки (asc, desc)
     """
@@ -175,7 +175,7 @@ def bulk_update_statuses(
 
     **Body:**
     - `registration_ids` - Список ID регистраций для обновления
-    - `status` - Новый статус (pending, accepted, declined, cancelled)
+    - `status` - Новый статус
     """
     # Обновляем статусы
     logger.info(
