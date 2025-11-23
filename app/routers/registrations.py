@@ -403,3 +403,133 @@ async def upload_payment(
             "Content-Disposition": f"inline; filename=ticket_{registration_id}.png"
         },
     )
+
+
+@router.post(
+    "/{registration_id}/decline",
+    response_model=Registration,
+    responses={
+        200: {
+            "description": "Регистрация отклонена пользователем",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "event_id": 1,
+                        "status": "declined",
+                        "check_in_token": "abc123xyz",
+                        "checked_in": False,
+                        "checked_in_at": None,
+                        "created_at": "2025-12-05T10:00:00",
+                        "updated_at": "2025-12-05T10:00:00",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Регистрация не в статусе payment",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Registration is not in payment status. Current status: accepted"
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Не авторизован",
+            "content": {
+                "application/json": {"example": {"detail": "Not authenticated"}}
+            },
+        },
+        403: {
+            "description": "Регистрация принадлежит другому пользователю",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. This registration belongs to another user."
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "Регистрация не найдена",
+            "content": {
+                "application/json": {"example": {"detail": "Registration not found"}}
+            },
+        },
+    },
+)
+def decline_payment(
+    registration_id: int,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    """
+    Отклонить оплату и отказаться от регистрации.
+
+    **Требует аутентификации через Telegram Mini App.**
+
+    Позволяет пользователю отказаться от оплаты и регистрации на мероприятие.
+    Статус регистрации меняется на `declined`.
+
+    **Ограничения:**
+    - Доступен только владельцу регистрации
+    - Регистрация должна быть в статусе `payment`
+
+    **Параметры:**
+    - `registration_id` - ID регистрации
+
+    **Возвращает:** Обновленную регистрацию со статусом `declined`
+    """
+    logger.info(
+        f"Payment decline attempt: registration_id={registration_id}, "
+        f"user={user.telegram_username or user.telegram_id}"
+    )
+
+    # Получаем регистрацию
+    registration = registration_crud.get_registration_by_id(db, registration_id)
+
+    if not registration:
+        logger.warning(
+            f"Payment decline failed: Registration {registration_id} not found"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Registration not found"
+        )
+
+    # Проверяем, что регистрация принадлежит текущему пользователю
+    if registration.user_id != user.id:
+        logger.warning(
+            f"Payment decline rejected: registration_id={registration_id} "
+            f"belongs to user_id={registration.user_id}, not {user.id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. This registration belongs to another user.",
+        )
+
+    # Проверяем статус регистрации
+    if registration.status != RegistrationStatusEnum.PAYMENT:
+        logger.warning(
+            f"Payment decline rejected: registration_id={registration_id}, "
+            f"status={registration.status.value} (expected: payment)"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Registration is not in payment status. Current status: {registration.status.value}",
+        )
+
+    # Обновляем статус регистрации на declined
+    registration.status = RegistrationStatusEnum.DECLINED
+    db.commit()
+    db.refresh(registration)
+
+    logger.info(
+        f"Payment decline successful: registration_id={registration_id}, "
+        f"user={user.telegram_username or user.telegram_id}, "
+        f"status changed to declined"
+    )
+
+    return registration
